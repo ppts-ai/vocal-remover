@@ -1,0 +1,43 @@
+name: Build and push Docker images to DockerHub
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*'
+
+permissions: read-all
+
+jobs:
+  build-docker-images:
+    runs-on: ubuntu-20.04
+    steps:
+        
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up QEMU for multi-platform builds
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Log in to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build and push the multi-platform Docker image
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/vocal-remover:${{ github.ref_name }}
+          push: true
+
